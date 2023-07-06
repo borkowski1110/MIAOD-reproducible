@@ -74,6 +74,7 @@ mmdet/datasets/__init__.py
 mmdet/datasets/builder.py
 mmdet/datasets/cityscapes.py
 mmdet/datasets/coco.py
+mmdet/datasets/crowd_human.py
 mmdet/datasets/custom.py
 mmdet/datasets/dataset_wrappers.py
 mmdet/datasets/deepfashion.py
@@ -99,17 +100,22 @@ mmdet/models/backbones/detectors_resnet.py
 mmdet/models/backbones/detectors_resnext.py
 mmdet/models/backbones/hourglass.py
 mmdet/models/backbones/hrnet.py
+mmdet/models/backbones/intern_image.py
 mmdet/models/backbones/regnet.py
 mmdet/models/backbones/res2net.py
 mmdet/models/backbones/resnet.py
 mmdet/models/backbones/resnext.py
 mmdet/models/backbones/ssd_vgg.py
+mmdet/models/dense_heads/MIAOD_head.py
+mmdet/models/dense_heads/MIAOD_retina_head.py
 mmdet/models/dense_heads/__init__.py
 mmdet/models/dense_heads/anchor_free_head.py
-mmdet/models/dense_heads/anchor_head.py
 mmdet/models/dense_heads/atss_head.py
 mmdet/models/dense_heads/base_dense_head.py
 mmdet/models/dense_heads/corner_head.py
+mmdet/models/dense_heads/deformable_detr_head.py
+mmdet/models/dense_heads/detr_head.py
+mmdet/models/dense_heads/dino_head.py
 mmdet/models/dense_heads/fcos_head.py
 mmdet/models/dense_heads/fovea_head.py
 mmdet/models/dense_heads/free_anchor_retina_head.py
@@ -122,7 +128,6 @@ mmdet/models/dense_heads/nasfcos_head.py
 mmdet/models/dense_heads/pisa_retinanet_head.py
 mmdet/models/dense_heads/pisa_ssd_head.py
 mmdet/models/dense_heads/reppoints_head.py
-mmdet/models/dense_heads/retina_head.py
 mmdet/models/dense_heads/retina_sepbn_head.py
 mmdet/models/dense_heads/rpn_head.py
 mmdet/models/dense_heads/rpn_test_mixin.py
@@ -132,6 +137,7 @@ mmdet/models/detectors/atss.py
 mmdet/models/detectors/base.py
 mmdet/models/detectors/cascade_rcnn.py
 mmdet/models/detectors/cornernet.py
+mmdet/models/detectors/dino.py
 mmdet/models/detectors/fast_rcnn.py
 mmdet/models/detectors/faster_rcnn.py
 mmdet/models/detectors/fcos.py
@@ -204,7 +210,9 @@ mmdet/models/roi_heads/shared_heads/__init__.py
 mmdet/models/roi_heads/shared_heads/res_layer.py
 mmdet/models/utils/__init__.py
 mmdet/models/utils/gaussian_target.py
+mmdet/models/utils/query_denoising.py
 mmdet/models/utils/res_layer.py
+mmdet/models/utils/transformer.py
 mmdet/ops/__init__.py
 mmdet/utils/__init__.py
 mmdet/utils/active_datasets.py
@@ -213,3 +221,4 @@ mmdet/utils/contextmanagers.py
 mmdet/utils/logger.py
 mmdet/utils/profiling.py
 mmdet/utils/util_mixins.py
+mmdet/utils/weight_init_extended.py

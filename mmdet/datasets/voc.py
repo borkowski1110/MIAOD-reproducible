@@ -59,7 +59,7 @@ class VOCDataset(XMLDataset):
         eval_results = {}
         if metric == 'mAP':
             assert isinstance(iou_thr, float)
-            if self.year == 2007:
+            if (self.year == 2007) or (self.year == 2012):
                 ds_name = 'voc07'
             else:
                 ds_name = self.dataset.CLASSES

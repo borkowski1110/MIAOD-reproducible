@@ -47,6 +47,7 @@ class BaseDenseHead(nn.Module, metaclass=ABCMeta):
                 losses: (dict[str, Tensor]): A dictionary of loss components.
                 proposal_list (list[Tensor]): Proposals of each image.
         """
+        # Lists: length equals the number of featmaps
         y_head_f_1, y_head_f_2, y_head_f_r, y_head_cls = self(x)
         # Label set training
         if losstype.losstype == 0:

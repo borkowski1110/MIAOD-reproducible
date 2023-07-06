@@ -411,6 +411,10 @@ class MIAODHead(BaseDenseHead):
         for i in range(len(x_i)):
             concat_x_i.append(torch.cat(x_i[i]))
         all_x_i = images_to_levels(concat_x_i, num_level_anchors)
+        # Inside: FL + FL + SmoothL1
+        # In YOLO:
+        # l_det_cls1, l_det_cls2, l_det_loc_1, l_det_loc_2, l_det_obj_1, l_det_obj_2
+        
         l_det_cls, l_det_loc = multi_apply(self.l_det, y_f, y_f_r, all_x_i,
                                            y_cls, label_weights_list, y_loc, bbox_weights_list,
                                            num_total_samples=num_total_samples)
@@ -421,8 +425,8 @@ class MIAODHead(BaseDenseHead):
 
     @force_fp32(apply_to=('y_f', 'y_f_r'))
     def get_img_gtlabel_score(self, y_cls_img, y_head_cls):
-        y_head_cls_1level = torch.zeros(len(y_cls_img), self.cls_out_channels).cuda(torch.cuda.current_device())
-        y_cls_1level = torch.zeros(len(y_cls_img), self.cls_out_channels).cuda(torch.cuda.current_device())
+        y_head_cls_1level = torch.zeros(len(y_cls_img), self.cls_out_channels).cuda(y_cls_img[0].device)
+        y_cls_1level = torch.zeros(len(y_cls_img), self.cls_out_channels).cuda(y_cls_img[0].device)
         for i_img in range(len(y_cls_img)):
             for i_obj in range(len(y_cls_img[i_img])):
                 y_cls_1level[i_img, y_cls_img[i_img][i_obj]] = 1
@@ -467,6 +471,7 @@ class MIAODHead(BaseDenseHead):
         for i in range(len(x_i)):
             concat_x_i.append(torch.cat(x_i[i]))
         all_x_i = images_to_levels(concat_x_i, num_level_anchors)
+        # DIFFERENCE ======================================================================================
         l_wave_dis, l_det_loc = multi_apply(self.l_wave_dis, y_f[0], y_f[1], y_head_cls, y_f_r, all_x_i, y_cls,
                                             label_weights_list, y_loc, bbox_weights_list,
                                             num_total_samples=num_total_samples)
@@ -553,6 +558,7 @@ class MIAODHead(BaseDenseHead):
         for i in range(len(x_i)):
             concat_x_i.append(torch.cat(x_i[i]))
         all_x_i = images_to_levels(concat_x_i, num_level_anchors)
+        # DIFFERENCE =================================================
         l_wave_dis_minus, l_det_loc = multi_apply(self.l_wave_dis_minus, y_f[0], y_f[1], y_head_cls, y_f_r, all_x_i,
                                                   y_cls, label_weights_list, y_loc, bbox_weights_list,
                                                   num_total_samples=num_total_samples)

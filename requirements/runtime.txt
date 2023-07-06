@@ -1,5 +1,6 @@
 matplotlib
-numpy
+numpy==1.24.2
 pycocotools@git+https://github.com/open-mmlab/cocoapi.git#subdirectory=pycocotools
 six
 terminaltables
+timm==0.6.11

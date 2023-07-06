@@ -21,7 +21,11 @@ from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmdet.datasets import build_dataloader, build_dataset
 from tools.utils import losstype
 from mmdet.utils.active_datasets import *
+from time import time as tic
 
+import json
+from datetime import datetime
+        
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
@@ -47,8 +51,8 @@ def parse_args():
     return args
 
 
-def main():
-    args = parse_args()
+def main(args):
+    # args = parse_args()
     cfg = Config.fromfile(args.config)
     if args.options is not None:
         cfg.merge_from_dict(args.options)
@@ -74,6 +78,13 @@ def main():
     else:
         distributed = True
         init_dist(args.launcher, **cfg.dist_params)
+        
+    # TIME MEASURING ================================================
+    procedure_start_time = datetime.now()
+    profiling_times = dict(zip(cfg.cycles, [{}]*len(cfg.cycles)))
+    cycle_times = dict(zip(range(cfg.epoch), [{}]*cfg.epoch))
+
+    # ===============================================================
     # create work_directory
     mmcv.mkdir_or_exist(osp.abspath(cfg.work_directory))
     # dump config
@@ -118,7 +129,9 @@ def main():
     np.save(cfg.work_directory + '/X_L_' + '0' + '.npy', X_L)
     np.save(cfg.work_directory + '/X_U_' + '0' + '.npy', X_U)
     initial_step = cfg.lr_config.step
+    # PROFILING SETUP
     for cycle in cfg.cycles:
+        logger.info(f"Cycle: {cycle} of {len(cfg.cycles)} is starting...")
         # set random seeds
         if args.seed is not None:
             logger.info(f'Set random seed to {args.seed}, deterministic: {args.deterministic}')
@@ -128,7 +141,9 @@ def main():
         # get the config of the labeled dataset
         cfg = create_X_L_file(cfg, X_L, all_anns, cycle)
         # load model
+        start = tic()
         model = build_detector(cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
+        cycle_times.update(model_build=tic() - start)
 
         # # Please change it to the epoch which you want to load model at.
         # model_file_name = '/latest.pth'
@@ -144,7 +159,7 @@ def main():
             # save mmdet version, config file content and class names in
             # checkpoints as meta data
             cfg.checkpoint_config.meta = dict(mmdet_version=__version__ + get_git_hash()[:7],
-                                              config=cfg.pretty_text, CLASSES=datasets[0].CLASSES)
+                                            config=cfg.pretty_text, CLASSES=datasets[0].CLASSES)
         model.CLASSES = datasets[0].CLASSES
         for epoch in range(cfg.epoch):
             # Only in the last 3 epoch does the learning rate need to be reduced and the model needs to be evaluated.
@@ -158,24 +173,31 @@ def main():
             # ---------- Label Set Training ----------
 
             if epoch == 0:
+                start = tic()
                 cfg = create_X_L_file(cfg, X_L, all_anns, cycle)
                 datasets = [build_dataset(cfg.data.train)]
+                cycle_times.get(epoch).update(label_set_train_1_data_prep=tic() - start)
                 losstype.update_vars(0)
                 cfg.total_epochs = cfg.epoch_ratio[0]
                 cfg_bak = cfg.deepcopy()
                 time.sleep(2)
                 for name, value in model.named_parameters():
                     value.requires_grad = True
-                train_detector(model, datasets, cfg,
-                               distributed=distributed, validate=(not args.no_validate), timestamp=timestamp, meta=meta)
+                start = tic()
+                logger.info("Initial label set training...")
+                # train_detector(model, datasets, cfg,
+                #             distributed=distributed, validate=(not args.no_validate), timestamp=timestamp, meta=meta)
+                cycle_times.get(epoch).update(label_set_training_1_train=tic() - start)
                 cfg = cfg_bak
 
             # ---------- Re-weighting and Minimizing Instance Uncertainty ----------
-
+            start = tic()
             cfg_u = create_X_U_file(cfg.deepcopy(), X_U, all_anns, cycle)
             cfg = create_X_L_file(cfg, X_L, all_anns, cycle)
             datasets_u = [build_dataset(cfg_u.data.train)]
             datasets = [build_dataset(cfg.data.train)]
+            cycle_times.get(epoch).update(minimizng_uncertainty_data_prep=tic() - start)
+            
             losstype.update_vars(1)
             cfg_u.total_epochs = cfg_u.epoch_ratio[1]
             cfg.total_epochs = cfg.epoch_ratio[1]
@@ -189,17 +211,22 @@ def main():
                     value.requires_grad = False
                 else:
                     value.requires_grad = True
-            train_detector(model, [datasets, datasets_u], [cfg, cfg_u],
-                           distributed=distributed, validate=(not args.no_validate), timestamp=timestamp, meta=meta)
+            start = tic()
+            logger.info("Minimizing instance uncertainty...")
+            # train_detector(model, [datasets, datasets_u], [cfg, cfg_u],
+            #             distributed=distributed, validate=(not args.no_validate), timestamp=timestamp, meta=meta)
+            cycle_times.get(epoch).update(minimizng_uncertainty_train=tic() - start)
             cfg_u = cfg_u_bak
             cfg = cfg_bak
 
             # ---------- Re-weighting and Maximizing Instance Uncertainty ----------
-
+            start = tic()
             cfg_u = create_X_U_file(cfg.deepcopy(), X_U, all_anns, cycle)
             cfg = create_X_L_file(cfg, X_L, all_anns, cycle)
             datasets_u = [build_dataset(cfg_u.data.train)]
             datasets = [build_dataset(cfg.data.train)]
+            cycle_times.get(epoch).update(maximizing_uncertainty_data_prep=tic() - start)
+            
             losstype.update_vars(2)
             cfg_u.total_epochs = cfg_u.epoch_ratio[1]
             cfg.total_epochs = cfg.epoch_ratio[1]
@@ -213,44 +240,64 @@ def main():
                     value.requires_grad = True
                 else:
                     value.requires_grad = False
-            train_detector(model, [datasets, datasets_u], [cfg, cfg_u],
-                           distributed=distributed,validate=(not args.no_validate), timestamp=timestamp, meta=meta)
+
+            start = tic()
+            logger.info("Maximizing instance uncertainty...")
+            # train_detector(model, [datasets, datasets_u], [cfg, cfg_u],
+            #             distributed=distributed,validate=(not args.no_validate), timestamp=timestamp, meta=meta)
+            cycle_times.get(epoch).update(maximizing_uncertainty_train=tic() - start)
             cfg_u = cfg_u_bak
             cfg = cfg_bak
 
             # ---------- Label Set Training ----------
-
+            start = tic()
             cfg = create_X_L_file(cfg, X_L, all_anns, cycle)
             datasets = [build_dataset(cfg.data.train)]
+            cycle_times.get(epoch).update(label_set_train_2_data_prep=tic() - start)
+            
             losstype.update_vars(0)
             cfg.total_epochs = cfg.epoch_ratio[0]
             cfg_bak = cfg.deepcopy()
             for name, value in model.named_parameters():
                 value.requires_grad = True
             time.sleep(2)
-            train_detector(model, datasets, cfg,
-                           distributed=distributed, validate=args.no_validate, timestamp=timestamp, meta=meta)
+            start = tic()
+            logger.info("Label set training...")
+            # train_detector(model, datasets, cfg,
+            #             distributed=distributed, validate=args.no_validate, timestamp=timestamp, meta=meta)
+            cycle_times.get(epoch).update(label_set_train_2_train=tic() - start)
             cfg = cfg_bak
 
         # ---------- Informative Image Selection ----------
 
-        if cycle != cfg.cycles[-1]:
+        if True:  # cycle != cfg.cycles[-1]:
             # get new labeled data
+            start=tic()
             dataset_al = build_dataset(cfg.data.test)
             data_loader = build_dataloader(dataset_al, samples_per_gpu=1, workers_per_gpu=cfg.data.workers_per_gpu,
-                                           dist=False, shuffle=False)
+                                        dist=False, shuffle=False)
+            cycle_times.update(uncertainty_reweighting_data_prep=tic() - start)
+            
             # set random seeds
             if args.seed is not None:
                 logger.info(f'Set random seed to {args.seed}, deterministic: {args.deterministic}')
                 set_random_seed(args.seed, deterministic=args.deterministic)
             cfg.seed = args.seed
             meta['seed'] = args.seed
+            start = tic()
             uncertainty = calculate_uncertainty(cfg, model, data_loader, return_box=False)
+            cycle_times.update(uncertainty_calculation=tic() - start)
             # update labeled set
+            start = tic()
             X_L, X_U = update_X_L(uncertainty, X_all, X_L, cfg.X_S_size)
+            cycle_times.update(label_set_updating=tic() - start)
             # save set and model
             np.save(cfg.work_directory + '/X_L_' + str(cycle+1) + '.npy', X_L)
             np.save(cfg.work_directory + '/X_U_' + str(cycle+1) + '.npy', X_U)
+        
+        profiling_times.get(cycle).update(cycle_times)
+        with open(f"log_nohup/{procedure_start_time}.json", "w") as logs:
+            json.dump(profiling_times, logs)
 
 
 if __name__ == '__main__':

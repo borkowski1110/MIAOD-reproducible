@@ -5,8 +5,12 @@ import numpy as np
 def get_X_L_0(cfg):
     # load dataset anns
     anns = load_ann_list(cfg.data.train.dataset.ann_file)
-    # get all indexes
-    X_all = np.arange(len(anns[0]) + len(anns[1]))
+    if len(anns) == 2:
+        # get all indexes
+        X_all = np.arange(len(anns[0]) + len(anns[1]))
+    else:
+        # If just one VOC is used
+        X_all = np.arange(len(anns[0]))
     # randomly select labeled set
     np.random.shuffle(X_all)
     X_L = X_all[:cfg.X_L_0_size].copy()

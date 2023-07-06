@@ -117,6 +117,8 @@ def train_detector(model, dataset, cfg, distributed=False, validate=False, times
     elif cfg.load_from:
         runner.load_checkpoint(cfg.load_from)
     if data_loaders_U is None:
+        print("<=>"*100)
+        print(data_loaders_L[0].__len__())
         runner.run(data_loaders_L, cfg.workflow, cfg.total_epochs)
     else:
         runner.run([data_loaders_L, data_loaders_U], cfg.workflow, cfg.total_epochs)

@@ -85,11 +85,11 @@ epoch_ratio = [5, 1]
 # The frequency of evaluating the model can be changed here.
 evaluation = dict(interval=epoch_ratio[0], metric='mAP')
 # The number of outer loops (i.e., all 3 training steps except the first Label Set Training step) can be changed here.
-epoch = 3
+epoch = 100
 # The repeat time for the labeled sets and unlabeled sets can be changed here.
 # The number of repeat times can be equivalent to the number of actual training epochs.
-X_L_repeat = 2
-X_U_repeat = 2
+X_L_repeat = 1
+X_U_repeat = 1
 # The hyper-parameters lambda and k can be changed here.
 train_cfg = dict(param_lambda = 0.5)
 k = 10000
@@ -97,11 +97,11 @@ k = 10000
 # Note that there are 16551 images in the PASCAL VOC 2007+2012 trainval sets.
 # In VOC 2007: 5011
 # In VOC 2012: 11540
-X_L_0_size = 2*5011//10
-X_S_size = 5011//10
+X_L_0_size = 5011
+X_S_size = 5011
 
 # The active learning cycles can be changed here.
-cycles = [0, 1, 2, 3, 4, 5]
+cycles = [0]
 # The work directory for saving logs and files can be changed here. Please refer to README.md for more information.
 work_directory = './work_dirs/MI-AOD_SSD'
 

@@ -1,5 +1,5 @@
 # Please change the dataset directory to your actual directory
-data_root = '$YOUR_DATASET_PATH/VOCdevkit/'
+data_root = '/datasets/VOCdevkit/'
 
 # dataset settings
 dataset_type = 'VOCDataset'
@@ -31,7 +31,7 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=2,
+    samples_per_gpu=4,
     workers_per_gpu=2,
     train=dict(
         type='RepeatDataset',
@@ -39,19 +39,20 @@ data = dict(
         dataset=dict(
             type=dataset_type,
             ann_file=[
-                data_root + 'VOC2007/ImageSets/Main/trainval.txt',
-                data_root + 'VOC2012/ImageSets/Main/trainval.txt'
+                data_root + 'VOC2012/ImageSets/Main/train.txt'
             ],
-            img_prefix=[data_root + 'VOC2007/', data_root + 'VOC2012/'],
+            img_prefix=[
+                data_root + 'VOC2012/'
+                ],
             pipeline=train_pipeline)),
     val=dict(
         type=dataset_type,
-        ann_file=data_root + 'VOC2007/ImageSets/Main/test.txt',
-        img_prefix=data_root + 'VOC2007/',
+        ann_file=data_root + 'VOC2012/ImageSets/Main/val.txt',
+        img_prefix=data_root + 'VOC2012/',
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
-        ann_file=data_root + 'VOC2007/ImageSets/Main/test.txt',
-        img_prefix=data_root + 'VOC2007/',
+        ann_file=data_root + 'VOC2012/ImageSets/Main/val.txt',
+        img_prefix=data_root + 'VOC2012/',
         pipeline=test_pipeline))
 evaluation = dict(interval=1, metric='mAP')
